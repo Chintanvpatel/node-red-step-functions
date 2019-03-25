@@ -1,0 +1,21 @@
+{
+  "bundleDependencies": false,
+  "dependencies": {
+    "aws-sdk": "^2.427.0",
+    "when": "3.7.x"
+  },
+  "deprecated": false,
+  "description": "implementation of the node-red storage API for AWS-S3",
+  "keywords": [
+    "node-red",
+    "AWS",
+    "STEPFUNCTION"
+  ],
+  "license": "Apache-2.0",
+  "main": "stepFunction.js",
+  "name": "node-red-step-function",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.0.1"
+}

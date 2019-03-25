@@ -13,9 +13,9 @@
   ],
   "license": "Apache-2.0",
   "main": "stepFunction.js",
-  "name": "node-red-step-function",
+  "name": "node-red-step-functions",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "0.0.1"
+  "version": "0.0.2"
 }

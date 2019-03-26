@@ -2,6 +2,7 @@
   "bundleDependencies": false,
   "dependencies": {
     "aws-sdk": "^2.427.0",
+    "jshint": "^2.10.2",
     "when": "3.7.x"
   },
   "deprecated": false,

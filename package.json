@@ -1,8 +1,9 @@
 {
   "bundleDependencies": false,
   "dependencies": {
-    "aws-sdk": "^2.427.0",
+    "aws-sdk": "^2.433.0",
     "jshint": "^2.10.2",
+    "lodash": "^4.17.11",
     "when": "3.7.x"
   },
   "deprecated": false,
@@ -18,5 +19,5 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "0.0.2"
+  "version": "0.0.3"
 }

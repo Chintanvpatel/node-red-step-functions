@@ -16,8 +16,10 @@
 var AWS = require('aws-sdk');
 var when = require('when');
 var util = require('util');
+var brandId;
 var fs = require('fs');
 var sFunction = require('./lib/awsStepFunction');
+var apiGateway = require('./lib/awsApiGateway');
 
 var settings;
 var appname;
@@ -26,8 +28,9 @@ var s3BucketName = null;
 var currentFlowRev = {};
 var currentSettingsRev = null;
 var currentCredRev = null;
-
+var endpointData = {};
 var libraryCache = {};
+const API_ID = 'haxlv8az0l';
 
 function prepopulateFlows(resolve) {
     var params = {};
@@ -80,6 +83,7 @@ var stepFunction = {
         s3BucketName = settings.awsS3Bucket;
         appname = settings.awsS3Appname || require('os').hostname();
         AWS.config.region = settings.awsRegion || 'eu-west-1';
+        brandId = settings.brand_id || process.env.BRAND_ID;
 
         return when.promise(function (resolve, reject) {
             s3 = new AWS.S3();
@@ -188,7 +192,12 @@ var stepFunction = {
                         });
 
                         when.all(promises).then(data => {
-                            resolve(data)
+                            endpointData = data;
+                            apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
+                                apiGateway.create(preparedData, API_ID, brandId, s3BucketName).then(finalData => {
+                                    resolve(finalData);
+                                })
+                            });
                         })
                     });
                 }

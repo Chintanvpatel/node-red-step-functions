@@ -188,6 +188,7 @@ var stepFunction = {
           reject(err.toString())
         } else {
           if (dataEntry) {
+            console.log('--------', dataEntry)
             sFunction.convert(dataEntry).then(function (definitions) {
               definitions.forEach((def) => {
                 promises.push(sFunction.save(def))

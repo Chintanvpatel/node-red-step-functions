@@ -155,7 +155,7 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       var params = {}
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + entryType + '.json'
+      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
       s3.getObject(params, function (err, doc) {
         if (err) {
           if (err.code === 'NoSuchKey') {

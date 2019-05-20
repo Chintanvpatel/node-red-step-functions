@@ -187,20 +187,21 @@ var stepFunction = {
         if (err) {
           reject(err.toString())
         } else {
-          sFunction.convert(dataEntry).then(function (definitions) {
-            definitions.forEach((def) => {
-              promises.push(sFunction.save(def))
-            })
-
-            when.all(promises).then(data => {
-              endpointData = data
-              apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
-                apiGateway.create(preparedData, API_ID, brandId, appId, s3BucketName).then(finalData => {
-                  resolve(finalData)
+          if (dataEntry) {
+            sFunction.convert(dataEntry).then(function (definitions) {
+              definitions.forEach((def) => {
+                promises.push(sFunction.save(def))
+              })
+              when.all(promises).then(data => {
+                endpointData = data
+                apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
+                  apiGateway.create(preparedData, API_ID, brandId, appId, s3BucketName).then(finalData => {
+                    resolve(finalData)
+                  })
                 })
               })
             })
-          })
+          }
         }
       })
     })

@@ -195,7 +195,7 @@ var stepFunction = {
               when.all(promises).then(data => {
                 endpointData = data
                 apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
-                  apiGateway.create(preparedData, API_ID, brandId, appId, s3BucketName).then(finalData => {
+                  apiGateway.create(preparedData, API_ID, brandId, appId, appname, s3BucketName).then(finalData => {
                     resolve(finalData)
                   })
                 })

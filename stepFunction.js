@@ -22,6 +22,15 @@ var fs = require('fs');
 var sFunction = require('./lib/awsStepFunction');
 var apiGateway = require('./lib/awsApiGateway');
 var mysql= require('mysql');
+  // DB Connect // 24 july -2019
+   // set up connection to DB
+   const pool = mysql.createPool({
+    host: process.env.WDEV_DB_HOST,
+    user: process.env.WDEV_DB_USER,
+    password: process.env.WDEV_DB_PASSWORD,
+    database: process.env.WDEV_DB_NAME,
+    port: 3306
+});
 
 
 var settings;
@@ -34,15 +43,7 @@ var currentCredRev = null;
 var endpointData = {};
 var libraryCache = {};
 const API_ID = 'haxlv8az0l';
- // DB Connect // 24 july -2019
-   // set up connection to DB
-   const pool = mysql.createPool({
-    host: process.env.WDEV_DB_HOST,
-    user: process.env.WDEV_DB_USER,
-    password: process.env.WDEV_DB_PASSWORD,
-    database: process.env.WDEV_DB_NAME,
-    port: 3306
-});
+
 
 function prepopulateFlows(resolve) {
   var params = {};
@@ -183,9 +184,10 @@ var stepFunction = {
   },
   saveData: function (entryType, dataEntry) {
    console.log('Save DATA');
+   
     var arrayNodeType = [];
     pool.getConnection((err,con)=>{
- 
+ console.log(con);
     var sql = 'SELECT n.name as node_name,np.Id as permission_id from nodes as n,node_permission as np where n.Id = np.node_id';
         con.query(sql,(error,res)=>{
           console.log("err------------>",error);
@@ -255,18 +257,15 @@ var stepFunction = {
                         if (error) throw error;
                         else{
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
-                          console.log('QUERY--->',sql,arrayUniqueType)
                           con.query(sql,[arrayUniqueType],(err,data=>{
                             console.log("err2------------>",err);
                             console.log('res2----->',data);
                               if (err) throw err;
                               con.release();
-                          });
+                          }));
                         }
                       });
                     });
-
-
                   });
                 });
               });

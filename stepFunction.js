@@ -185,18 +185,23 @@ var stepFunction = {
    console.log('Save DATA');
     var arrayNodeType = [];
     pool.getConnection((err,con)=>{
-      console.log("err------------>",err)
-      console.log('Connection----->',con)
+ 
     var sql = 'SELECT n.name as node_name,np.Id as permission_id from nodes as n,node_permission as np where n.Id = np.node_id';
         con.query(sql,(error,res)=>{
+          console.log("err------------>",error);
+          console.log('res----->',res);
+
           if (error) throw error;
           else if(res.length > 0 ){
           res.forEach(function(data){
             arrayNodeType[data.node_name] = data.permission_id;
           });
           console.log(res);
+          return false;
         }
         });
+
+
 
   });
 

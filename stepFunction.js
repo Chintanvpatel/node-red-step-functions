@@ -193,11 +193,11 @@ var stepFunction = {
 
           if (error) throw error;
           else if(res.length > 0 ){
-          res.forEach(function(data){
+          res.forEach(function(data){ 
             arrayNodeType[data.node_name] = data.permission_id;
           });
           console.log(res);
-          return false;
+          
         }
         });
 
@@ -247,17 +247,18 @@ var stepFunction = {
                 apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
                   apiGateway.create(preparedData, API_ID, brandId, appId, appname, s3BucketName).then(finalData => {
                     resolve(finalData);
-                   
                     pool.getConnection((err, con)=>{
                       var sql = "DELETE from asset_permission WHERE asset_id ="+appId;
-                      console.log(con.query(sql));
                       con.query(sql,(error,res)=>{
-                      console.log(res);
+                        console.log("err1------------>",error);
+                        console.log('res1----->',res);
                         if (error) throw error;
                         else{
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
-                          console.log(con.query(sql));
-                          con.query(sql,[arrayUniqueType],(err,res)=>{
+                          console.log('QUERY--->',sql,arrayUniqueType)
+                          con.query(sql,[arrayUniqueType],(err,data=>{
+                            console.log("err2------------>",err);
+                            console.log('res2----->',data);
                               if (err) throw err;
                               con.release();
                           });

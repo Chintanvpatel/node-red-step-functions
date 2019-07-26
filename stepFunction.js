@@ -34,6 +34,15 @@ var currentCredRev = null;
 var endpointData = {};
 var libraryCache = {};
 const API_ID = 'haxlv8az0l';
+ // DB Connect // 24 july -2019
+   // set up connection to DB
+   const pool = mysql.createPool({
+    host: process.env.WDEV_DB_HOST,
+    user: process.env.WDEV_DB_USER,
+    password: process.env.WDEV_DB_PASSWORD,
+    database: process.env.WDEV_DB_NAME,
+    port: 3306
+});
 
 function prepopulateFlows(resolve) {
   var params = {};
@@ -114,14 +123,6 @@ var stepFunction = {
     return this.getArrayData('flow');
   },
   saveFlows: function (flows) {
-   // DB Connect // 24 july -2019
-    connection = mysql.createConnection({
-      host     : process.env.DB_HOST,
-      user     : process.env.DB_USER,
-      password : process.env.DB_PWD,
-      database : process.env.DB_NAME
-    });
-    connection.connect();
     return this.saveData('flow', flows);
   },
   getCredentials: function () {
@@ -181,15 +182,21 @@ var stepFunction = {
     });
   },
   saveData: function (entryType, dataEntry) {
+   console.log('Save DATA');
     var arrayNodeType = [];
-    connection.query('SELECT n.name as node_name,np.Id as permission_id from nodes as n,node_permission as np where n.Id = np.node_id', function (error, results, fields) {
-      if (error) throw error;
-      if(results.length > 0 ){
-      results.forEach(function(data){
+    pool.getConnection((err,con)=>{
+    var sql = 'SELECT n.name as node_name,np.Id as permission_id from nodes as n,node_permission as np where n.Id = np.node_id';
+    console.log("CONNECTION--->",con.query(sql));
+    con.query(sql,(error,res)=>{
+		  if (error) throw error;
+      else if(res.length > 0 ){
+      res.forEach(function(data){
         arrayNodeType[data.node_name] = data.permission_id;
       });
-    }
+      console.log(res);
+     }
     });
+  });
 
     return when.promise(function (resolve, reject) {
 
@@ -233,18 +240,25 @@ var stepFunction = {
                 apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
                   apiGateway.create(preparedData, API_ID, brandId, appId, appname, s3BucketName).then(finalData => {
                     resolve(finalData);
-                    var sql = "DELETE from asset_permission WHERE asset_id ="+appId;
-                    connection.query(sql,function(err,resolve) {
-                        if (err) throw err;
+                   
+                    pool.getConnection((err, con)=>{
+                      var sql = "DELETE from asset_permission WHERE asset_id ="+appId;
+                      console.log(con.query(sql));
+                      con.query(sql,(error,res)=>{
+                      console.log(res);
+                        if (error) throw error;
                         else{
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
-                          connection.query(sql, [arrayUniqueType], function(err) {
+                          console.log(con.query(sql));
+                          con.query(sql,[arrayUniqueType],(err,res)=>{
                               if (err) throw err;
-                              connection.end();
+                              con.release();
                           });
                         }
+                      });
                     });
-                    
+
+
                   });
                 });
               });

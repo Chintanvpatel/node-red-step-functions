@@ -183,16 +183,11 @@ var stepFunction = {
     });
   },
   saveData: function (entryType, dataEntry) {
-   console.log('Save DATA');
-   
+   console.log('Save flow...');
     var arrayNodeType = [];
     pool.getConnection((err,con)=>{
- console.log(con);
     var sql = 'SELECT n.name as node_name,np.Id as permission_id from nodes as n,node_permission as np where n.Id = np.node_id';
         con.query(sql,(error,res)=>{
-          console.log("err------------>",error);
-          console.log('res----->',res);
-
           if (error) throw error;
           else if(res.length > 0 ){
           res.forEach(function(data){ 
@@ -202,9 +197,6 @@ var stepFunction = {
           
         }
         });
-
-
-
   });
 
     return when.promise(function (resolve, reject) {
@@ -252,14 +244,10 @@ var stepFunction = {
                     pool.getConnection((err, con)=>{
                       var sql = "DELETE from asset_permission WHERE asset_id ="+appId;
                       con.query(sql,(error,res)=>{
-                        console.log("err1------------>",error);
-                        console.log('res1----->',res);
                         if (error) throw error;
                         else{
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
                           con.query(sql,[arrayUniqueType],(err,data=>{
-                            console.log("err2------------>",err);
-                            console.log('res2----->',data);
                               if (err) throw err;
                               con.release();
                           }));

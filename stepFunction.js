@@ -193,8 +193,6 @@ var stepFunction = {
           res.forEach(function(data){ 
             arrayNodeType[data.node_name] = data.permission_id;
           });
-          console.log(res);
-          
         }
         });
   });
@@ -247,16 +245,12 @@ var stepFunction = {
                         if (error) throw error;
                         else{
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
-                          console.log(sql);
                           con.query(sql,[arrayUniqueType],(err,result=>{
                               if (err) throw err;
                               else{
-                                console.log(result);
+                                var energy = arraySelectNodeType.join();
                                 // Delete unnecessary permission from role
-                                var sqlQuery = `DELETE asset_role_permission FROM asset_role_permission 
-                                           INNER JOIN asset_permission ON asset_permission.node_permission_id != asset_role_permission.permission_id 
-                                           WHERE asset_role_permission.asset_id = ` + appId;
-                                console.log("sqlQuery---",sqlQuery);                                           
+                                var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN ('+energy+') AND asset_id = '+ appId;
                                 con.query(sqlQuery,(err,data=>{
                                     if (err) throw err;
                                     con.release();

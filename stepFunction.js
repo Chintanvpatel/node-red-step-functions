@@ -249,7 +249,17 @@ var stepFunction = {
                           var sql = "INSERT INTO asset_permission (	asset_id, node_permission_id) VALUES ?";
                           con.query(sql,[arrayUniqueType],(err,data=>{
                               if (err) throw err;
-                              con.release();
+                              else{
+                                // Delete unncessary permission from role
+                                var sql = `DELETE asset_role_permission FROM asset_role_permission 
+                                           INNER JOIN asset_permission ON asset_permission.node_permission_id != asset_role_permission.permission_id 
+                                           WHERE asset_role_permission.asset_id = ` + appId;
+                                con.query(sql,(err,data=>{
+                                    if (err) throw err;
+                                    con.release();
+                                }));
+                              }
+                              
                           }));
                         }
                       });

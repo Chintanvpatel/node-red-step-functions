@@ -18,6 +18,7 @@ var when = require('when');
 var util = require('util');
 var brandId;
 var appId;
+var poolId;
 var fs = require('fs');
 var sFunction = require('./lib/awsStepFunction');
 var apiGateway = require('./lib/awsApiGateway');
@@ -96,6 +97,7 @@ var stepFunction = {
     AWS.config.region = settings.awsRegion || 'eu-west-1';
     brandId = settings.brand_id || process.env.BRAND_ID;
     appId = settings.app_id || process.env.APP_ID;
+    poolId = settings.pool_id || process.env.POOL_ID;
     return when.promise(function (resolve, reject) {
       s3 = new AWS.S3();
       if (!s3BucketName) {
@@ -237,7 +239,7 @@ var stepFunction = {
               when.all(promises).then(data => {
                 endpointData = data;
                 apiGateway.prepare(dataEntry, endpointData).then(preparedData => {
-                  apiGateway.create(preparedData, API_ID, brandId, appId, appname, s3BucketName).then(finalData => {
+                  apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, s3BucketName).then(finalData => {
                     resolve(finalData);
                     pool.getConnection((err, con)=>{
                       var sql = "DELETE from asset_permission WHERE asset_id ="+appId;

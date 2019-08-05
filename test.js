@@ -1,14 +1,14 @@
-var stepFunction = require('./stepFunction');
+var stepFunction = require('./stepFunction')
 
 var settings = {
-    awsS3Bucket: 'static.wsuite.com',
-    awsRegion: 'us-east-1',
-    brand_id: 52137,
-    awsS3Appname: 'wdev',
-    app_id: 3
+  awsS3Bucket: 'wsuite-alb',
+  awsRegion: 'us-east-1',
+  brand_id: 52137,
+  awsS3Appname: 'test',
+  pool_id: 'TfRD4'
 }
 
-var flowJson = [{ "id": "d71e62d7.6fc07", "type": "tab", "label": "Flow 1", "disabled": false, "info": "" }, { "id": "f388f0e7.2e7c2", "type": "http in", "z": "d71e62d7.6fc07", "name": "", "url": "/hello", "method": "get", "upload": false, "swaggerDoc": "", "x": 480, "y": 380, "wires": [["6afb752e.7d120c"]] }, { "id": "f87fd0f.807923", "type": "http response", "z": "d71e62d7.6fc07", "name": "", "statusCode": "", "headers": {}, "x": 820, "y": 380, "wires": [] }, { "id": "6afb752e.7d120c", "type": "template", "z": "d71e62d7.6fc07", "name": "form", "field": "payload", "fieldType": "msg", "format": "handlebars", "syntax": "mustache", "template": "<form method=\"POST\">\n    Input your name<input type=\"text\" name=\"key1\">\n    <input type=\"submit\">\n</form>", "output": "str", "x": 660, "y": 380, "wires": [["f87fd0f.807923"]] }, { "id": "af7db394.52947", "type": "http in", "z": "d71e62d7.6fc07", "name": "", "url": "/hello", "method": "post", "upload": false, "swaggerDoc": "", "x": 490, "y": 460, "wires": [["115389aa.990866"]] }, { "id": "115389aa.990866", "type": "template", "z": "d71e62d7.6fc07", "name": "view", "field": "payload", "fieldType": "msg", "format": "handlebars", "syntax": "plain", "template": "<h1>Hello Chintan</h1>", "output": "str", "x": 660, "y": 460, "wires": [["f87fd0f.807923"]] }]
+var flowJson = [{"id":"5b2a8c81.0faec4","type":"tab","label":"Flow 1","disabled":false,"info":""},{"id":"65f16fc1.53bc3","type":"http in","z":"5b2a8c81.0faec4","name":"","url":"/welcome","method":"get","upload":false,"swaggerDoc":"","x":130,"y":80,"wires":[["de2e8609.f8a098"]]},{"id":"de2e8609.f8a098","type":"template","z":"5b2a8c81.0faec4","name":"","field":"payload","fieldType":"msg","format":"text","syntax":"plain","template":"This is the payload","output":"str","x":320,"y":60,"wires":[["9ee92628.f80048"]]},{"id":"9ee92628.f80048","type":"http response","z":"5b2a8c81.0faec4","name":"","statusCode":"","headers":{},"x":470,"y":80,"wires":[]}]
 
-stepFunction.init(settings);
-console.log(stepFunction.saveData('flow', flowJson));
+stepFunction.init(settings)
+console.log(stepFunction.saveData('flow', flowJson))

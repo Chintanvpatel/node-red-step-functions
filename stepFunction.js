@@ -23,6 +23,7 @@ var sFunction = require('./lib/awsStepFunction')
 var apiGateway = require('./lib/awsApiGateway')
 var mysql = require('mysql')
 const path = require('path')
+var allMappingFunctions = [];
 // set up connection to DB
 const pool = mysql.createPool({
   host: process.env.WDEV_DB_HOST,
@@ -39,7 +40,7 @@ var s3BucketName = null
 var endpointData = {}
 const API_ID = 'haxlv8az0l'
 
-function prepopulateFlows (resolve) {
+function prepopulateFlows(resolve) {
   var params = {}
   params.Bucket = s3BucketName
   params.Key = appname + '/' + 'flow.json'
@@ -50,7 +51,6 @@ function prepopulateFlows (resolve) {
         try {
           var flow = fs.readFileSync(path.join(__dirname, '/defaults/flow.json'), 'utf8')
           var flows = JSON.parse(flow)
-          console.log('>> Adding default flow')
           promises.push(stepFunction.saveFlows(flows))
         } catch (err) {
           console.log(err)
@@ -160,7 +160,6 @@ var stepFunction = {
     })
   },
   saveData: function (entryType, dataEntry) {
-    console.log('Save flow...')
     var arrayNodeType = []
     pool.getConnection((err, con) => {
       if (err) throw err
@@ -206,41 +205,43 @@ var stepFunction = {
               arrayUniqueType[j] = [appId, element]
               j++
             })
-
-            sFunction.convert(dataEntry).then(function (definitions) {
-              definitions.forEach((def) => {
-                promises.push(sFunction.save(def))
-              })
-              when.all(promises).then(data => {
-                endpointData = data
-                apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
-                  apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, s3BucketName).then(finalData => {
-                    resolve(finalData)
-                    pool.getConnection((err, con) => {
-                      var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
-                      con.query(sql, (error, res) => {
-                        if (error) throw error
-                        else {
-                          var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
-                          con.query(sql, [arrayUniqueType], (err, result => {
-                            if (err) throw err
-                            else {
-                              var energy = arraySelectNodeType.join()
-                              // Delete unnecessary permission from role
-                              var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
-                              con.query(sqlQuery, (err, data => {
-                                if (err) throw err
-                                con.release()
-                              }))
-                            }
-                          }))
-                        }
+            getLambdaMappings().then((vals) => {
+              sFunction.convert(dataEntry, vals).then(function (definitions) {
+                definitions.forEach((def) => {
+                  promises.push(sFunction.save(def))
+                })
+                when.all(promises).then(data => {
+                  endpointData = data
+                  apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
+                    apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, s3BucketName).then(finalData => {
+                      resolve(finalData)
+                      pool.getConnection((err, con) => {
+                        var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
+                        con.query(sql, (error, res) => {
+                          if (error) throw error
+                          else {
+                            var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
+                            con.query(sql, [arrayUniqueType], (err, result => {
+                              if (err) throw err
+                              else {
+                                var energy = arraySelectNodeType.join()
+                                // Delete unnecessary permission from role
+                                var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
+                                con.query(sqlQuery, (err, data => {
+                                  if (err) throw err
+                                  con.release()
+                                }))
+                              }
+                            }))
+                          }
+                        })
                       })
                     })
                   })
                 })
               })
-            })
+
+            });
           } else {
             resolve()
           }
@@ -334,8 +335,48 @@ var stepFunction = {
         }
       })
     })
-  }
+
+  },
+
+
+}
+var getLambdaMappings = async function () {
+  return new Promise(resolve => {
+    fs.readFile('/usr/src/node-red/package.json', 'utf8', function (err, contents) {
+      if ( contents !== undefined || contents !== 'undefined') {
+        allMappingFiles = Object.keys(JSON.parse(contents).dependencies);
+        var promises = []
+        allMappingFiles.forEach((listItem) => {
+          const path = '/usr/src/node-red/node_modules/' + listItem.trim() + '/mapping.json';
+          // const tempPath = '../nodered-docker/mapping.json';
+
+          promises.push(fileReader(path));
+        })
+        var finalObject = null;
+        when.all(promises).then((data) => {
+          finalObject = Object.assign({}, ...data);
+          finalObject['http response'] = 'arn:aws:lambda:us-east-1:133013689155:function:http-response-node';
+          resolve(finalObject)
+        })
+      }else{
+        console.log('content is undefined');
+      }
+    });
+  });
 
 }
 
+function fileReader(tempPath) {
+  return new Promise(resolve => {
+    fs.readFile(tempPath, 'utf8', function (err, contents) {
+      if (contents !== undefined && contents !== 'undefined') {
+        resolve(JSON.parse(contents));
+      } else {
+        console.log('dependency: ', tempPath, ' had no mapping file');
+        resolve();
+      }
+
+    });
+  });
+}
 module.exports = stepFunction

@@ -356,6 +356,7 @@ var getLambdaMappings = async function () {
         when.all(promises).then((data) => {
           finalObject = Object.assign({}, ...data);
           finalObject['http response'] = 'arn:aws:lambda:us-east-1:133013689155:function:http-response-node';
+          finalObject['getFeeReport'] = 'arn:aws:lambda:us-east-1:133013689155:function:wdev-lambda-winsights';
           resolve(finalObject)
         })
       }else{

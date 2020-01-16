@@ -71,9 +71,11 @@ var stepFunction = {
   init: function (_settings) {
     settings = _settings
     s3BucketName = settings.awsS3Bucket
-    appname = settings.awsS3Appname || require('os').hostname()
+    appname = process.env.APP_NAME || settings.awsS3Appname || require('os').hostname()
     AWS.config.region = settings.awsRegion || 'eu-west-1'
     brandId = settings.brand_id || process.env.BRAND_ID
+    identity = settings.brand_id || process.env.IDENTIFIER
+    type = settings.brand_id || process.env.TYPE
     appId = settings.app_id || process.env.APP_ID
     poolId = settings.pool_id || process.env.POOL_ID
     return when.promise(function (resolve, reject) {
@@ -119,7 +121,11 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       var params = {}
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       s3.getObject(params, function (err, doc) {
         if (err) {
           if (err.code === 'NoSuchKey') {
@@ -141,7 +147,11 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       var params = {}
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       s3.getObject(params, function (err, doc) {
         if (err) {
           if (err.code === 'NoSuchKey') {
@@ -180,7 +190,11 @@ var stepFunction = {
       var arraySelectNodeType = []
       var arrayUniqueType = []
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       params.Body = JSON.stringify(dataEntry)
 
       s3.upload(params, function (err, doc) {
@@ -211,31 +225,25 @@ var stepFunction = {
                   promises.push(sFunction.save(def))
                 })
                 when.all(promises).then(data => {
-                  endpointData = data
-                  apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
-                    apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, s3BucketName).then(finalData => {
-                      resolve(finalData)
-                      pool.getConnection((err, con) => {
-                        var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
-                        con.query(sql, (error, res) => {
-                          if (error) throw error
+                  pool.getConnection((err, con) => {
+                    var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
+                    con.query(sql, (error, res) => {
+                      if (error) throw error
+                      else {
+                        var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
+                        con.query(sql, [arrayUniqueType], (err, result => {
+                          if (err) throw err
                           else {
-                            var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
-                            con.query(sql, [arrayUniqueType], (err, result => {
+                            var energy = arraySelectNodeType.join()
+                            // Delete unnecessary permission from role
+                            var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
+                            con.query(sqlQuery, (err, data => {
                               if (err) throw err
-                              else {
-                                var energy = arraySelectNodeType.join()
-                                // Delete unnecessary permission from role
-                                var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
-                                con.query(sqlQuery, (err, data => {
-                                  if (err) throw err
-                                  con.release()
-                                }))
-                              }
+                              con.release()
                             }))
                           }
-                        })
-                      })
+                        }))
+                      }
                     })
                   })
                 })

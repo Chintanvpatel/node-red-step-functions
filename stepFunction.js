@@ -225,6 +225,7 @@ var stepFunction = {
                   promises.push(sFunction.save(def))
                 })
                 when.all(promises).then(data => {
+                  resolve(data)
                   pool.getConnection((err, con) => {
                     var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
                     con.query(sql, (error, res) => {

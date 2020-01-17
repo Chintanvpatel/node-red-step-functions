@@ -1,4 +1,4 @@
-12{
+{
   "bundleDependencies": [],
   "dependencies": {
     "aws-sdk": "^2.433.0",

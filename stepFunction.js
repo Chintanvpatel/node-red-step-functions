@@ -122,7 +122,7 @@ var stepFunction = {
       var params = {}
       params.Bucket = s3BucketName
       if(type === 'service') {
-        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
       } else {  
         params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
       }
@@ -148,7 +148,7 @@ var stepFunction = {
       var params = {}
       params.Bucket = s3BucketName
       if(type === 'service') {
-        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
       } else {  
         params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
       }
@@ -191,7 +191,7 @@ var stepFunction = {
       var arrayUniqueType = []
       params.Bucket = s3BucketName
       if(type === 'service') {
-        params.Key = appname + '/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
       } else {  
         params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
       }
@@ -225,26 +225,31 @@ var stepFunction = {
                   promises.push(sFunction.save(def))
                 })
                 when.all(promises).then(data => {
-                  resolve(data)
-                  pool.getConnection((err, con) => {
-                    var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
-                    con.query(sql, (error, res) => {
-                      if (error) throw error
-                      else {
-                        var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
-                        con.query(sql, [arrayUniqueType], (err, result => {
-                          if (err) throw err
+                  endpointData = data
+                  apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
+                    apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, type, s3BucketName).then(finalData => {
+                      resolve(finalData)
+                      pool.getConnection((err, con) => {
+                        var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
+                        con.query(sql, (error, res) => {
+                          if (error) throw error
                           else {
-                            var energy = arraySelectNodeType.join()
-                            // Delete unnecessary permission from role
-                            var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
-                            con.query(sqlQuery, (err, data => {
+                            var sql = 'INSERT INTO asset_permission (asset_id, node_permission_id) VALUES ?'
+                            con.query(sql, [arrayUniqueType], (err, result => {
                               if (err) throw err
-                              con.release()
+                              else {
+                                var energy = arraySelectNodeType.join()
+                                // Delete unnecessary permission from role
+                                var sqlQuery = 'DELETE FROM asset_role_permission WHERE permission_id  NOT IN (' + energy + ') AND asset_id = ' + appId
+                                con.query(sqlQuery, (err, data => {
+                                  if (err) throw err
+                                  con.release()
+                                }))
+                              }
                             }))
                           }
-                        }))
-                      }
+                        })
+                      })
                     })
                   })
                 })

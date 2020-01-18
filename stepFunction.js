@@ -78,6 +78,7 @@ var stepFunction = {
     type = settings.brand_id || process.env.TYPE
     appId = settings.app_id || process.env.APP_ID
     poolId = settings.pool_id || process.env.POOL_ID
+    log_prefix = process.env.LOG_PREFIX
     env = process.env.ENVIRONMENT || 'prod'
     return when.promise(function (resolve, reject) {
       s3 = new AWS.S3()
@@ -223,7 +224,7 @@ var stepFunction = {
             getLambdaMappings().then((vals) => {
               sFunction.convert(dataEntry, vals).then(function (definitions) {
                 definitions.forEach((def) => {
-                  promises.push(sFunction.save(def, brandId, appId, identity, type, env))
+                  promises.push(sFunction.save(def, brandId, appId, identity, type, env, log_prefix))
                 })
                 when.all(promises).then(data => {
                   endpointData = data

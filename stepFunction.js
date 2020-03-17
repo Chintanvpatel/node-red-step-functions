@@ -80,6 +80,8 @@ var stepFunction = {
     poolId = settings.pool_id || process.env.POOL_ID
     log_prefix = process.env.LOG_PREFIX
     env = process.env.ENVIRONMENT || 'prod'
+    dev_host = process.env.WDEV_DB_HOST || 'production'
+    environment = dev_host.split('-')[0]
     return when.promise(function (resolve, reject) {
       s3 = new AWS.S3()
       var params = { Bucket: s3BucketName }
@@ -224,7 +226,7 @@ var stepFunction = {
             getLambdaMappings().then((vals) => {
               sFunction.convert(dataEntry, vals).then(function (definitions) {
                 definitions.forEach((def) => {
-                  promises.push(sFunction.save(def, brandId, appId, identity, type, env, log_prefix))
+                  promises.push(sFunction.save(def, brandId, appId, identity, type, env, environment, log_prefix))
                 })
                 when.all(promises).then(data => {
                   endpointData = data

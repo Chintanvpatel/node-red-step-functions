@@ -85,6 +85,8 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       s3 = new AWS.S3()
       var params = { Bucket: s3BucketName }
+      console.log('process.env----------',process.env);
+      console.log('params----------',params);
       s3.listObjects(params, function (err, data) {
         if (err) {
           console.error('s3s get bucket error ', err)
@@ -107,6 +109,7 @@ var stepFunction = {
     return this.getArrayData('flow')
   },
   saveFlows: function (flows) {
+    console.log('------------------saveFlows------------------')
     return this.saveData('flow', flows)
   },
   getCredentials: function () {

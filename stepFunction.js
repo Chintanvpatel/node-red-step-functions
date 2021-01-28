@@ -174,6 +174,7 @@ var stepFunction = {
     })
   },
   saveData: function (entryType, dataEntry) {
+    console.log('saveData');
     var arrayNodeType = []
     pool.getConnection((err, con) => {
       if (err) throw err
@@ -200,12 +201,13 @@ var stepFunction = {
         params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
       }
       params.Body = JSON.stringify(dataEntry)
-
+      console.log('params------',params);
       s3.upload(params, function (err, doc) {
         if (err) {
           reject(err.toString())
         } else {
           if (dataEntry && Array.isArray(dataEntry) && entryType === 'flow') {
+            console.log(11111111111111)
             // Fetch node data from db and set with dynamic create node for insert in db
             var i = 0
             dataEntry.forEach(function (element) {
@@ -224,14 +226,17 @@ var stepFunction = {
               j++
             })
             getLambdaMappings().then((vals) => {
+              console.log(2222222222)
               sFunction.convert(dataEntry, vals).then(function (definitions) {
                 definitions.forEach((def) => {
                   promises.push(sFunction.save(def, brandId, appId, identity, type, env, environment, log_prefix))
                 })
                 when.all(promises).then(data => {
                   endpointData = data
+                  console.log(3333333333)
                   apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
                     apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, type, s3BucketName).then(finalData => {
+                      console.log(4444444444)
                       resolve(finalData)
                       pool.getConnection((err, con) => {
                         var sql = 'DELETE from asset_permission WHERE asset_id =' + appId

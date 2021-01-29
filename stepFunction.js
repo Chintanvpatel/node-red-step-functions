@@ -71,14 +71,22 @@ var stepFunction = {
   init: function (_settings) {
     settings = _settings
     s3BucketName = settings.awsS3Bucket
-    appname = settings.awsS3Appname || require('os').hostname()
+    appname = process.env.APP_NAME || settings.awsS3Appname || require('os').hostname()
     AWS.config.region = settings.awsRegion || 'eu-west-1'
     brandId = settings.brand_id || process.env.BRAND_ID
+    identity = settings.brand_id || process.env.IDENTIFIER
+    type = settings.brand_id || process.env.TYPE
     appId = settings.app_id || process.env.APP_ID
     poolId = settings.pool_id || process.env.POOL_ID
+    log_prefix = process.env.LOG_PREFIX
+    env = process.env.ENVIRONMENT || 'prod'
+    dev_host = process.env.WDEV_DB_HOST || 'production'
+    environment = dev_host.split('-')[0]
     return when.promise(function (resolve, reject) {
       s3 = new AWS.S3()
       var params = { Bucket: s3BucketName }
+      console.log('process.env----------',process.env);
+      console.log('params----------',params);
       s3.listObjects(params, function (err, data) {
         if (err) {
           console.error('s3s get bucket error ', err)
@@ -101,6 +109,7 @@ var stepFunction = {
     return this.getArrayData('flow')
   },
   saveFlows: function (flows) {
+    console.log('------------------saveFlows------------------')
     return this.saveData('flow', flows)
   },
   getCredentials: function () {
@@ -119,7 +128,11 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       var params = {}
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       s3.getObject(params, function (err, doc) {
         if (err) {
           if (err.code === 'NoSuchKey') {
@@ -141,7 +154,11 @@ var stepFunction = {
     return when.promise(function (resolve, reject) {
       var params = {}
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       s3.getObject(params, function (err, doc) {
         if (err) {
           if (err.code === 'NoSuchKey') {
@@ -160,6 +177,7 @@ var stepFunction = {
     })
   },
   saveData: function (entryType, dataEntry) {
+    console.log('saveData');
     var arrayNodeType = []
     pool.getConnection((err, con) => {
       if (err) throw err
@@ -180,14 +198,19 @@ var stepFunction = {
       var arraySelectNodeType = []
       var arrayUniqueType = []
       params.Bucket = s3BucketName
-      params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      if(type === 'service') {
+        params.Key = appname + '/services/' + identity.split('-').slice(-1)[0] + '/' + entryType + '.json'
+      } else {  
+        params.Key = appname + '/' + brandId + '/' + appId + '/' + entryType + '.json'
+      }
       params.Body = JSON.stringify(dataEntry)
-
+      console.log('params------',params);
       s3.upload(params, function (err, doc) {
         if (err) {
           reject(err.toString())
         } else {
           if (dataEntry && Array.isArray(dataEntry) && entryType === 'flow') {
+            console.log(11111111111111)
             // Fetch node data from db and set with dynamic create node for insert in db
             var i = 0
             dataEntry.forEach(function (element) {
@@ -206,14 +229,17 @@ var stepFunction = {
               j++
             })
             getLambdaMappings().then((vals) => {
+              console.log(2222222222)
               sFunction.convert(dataEntry, vals).then(function (definitions) {
                 definitions.forEach((def) => {
-                  promises.push(sFunction.save(def))
+                  promises.push(sFunction.save(def, brandId, appId, identity, type, env, environment, log_prefix))
                 })
                 when.all(promises).then(data => {
                   endpointData = data
+                  console.log(3333333333)
                   apiGateway.prepare(dataEntry, endpointData, definitions).then(preparedData => {
-                    apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, s3BucketName).then(finalData => {
+                    apiGateway.create(preparedData, API_ID, brandId, appId, poolId, appname, type, s3BucketName).then(finalData => {
+                      console.log(4444444444)
                       resolve(finalData)
                       pool.getConnection((err, con) => {
                         var sql = 'DELETE from asset_permission WHERE asset_id =' + appId
@@ -355,8 +381,7 @@ var getLambdaMappings = async function () {
         var finalObject = null;
         when.all(promises).then((data) => {
           finalObject = Object.assign({}, ...data);
-          finalObject['http response'] = 'arn:aws:lambda:us-east-1:133013689155:function:http-response-node';
-          finalObject['getFeeReport'] = 'arn:aws:lambda:us-east-1:133013689155:function:wdev-lambda-winsights';
+          finalObject['http response'] = 'arn:aws:lambda:us-east-1:133013689155:function:'+process.env.ENV_IDENTIFIER+'-http-response-node';
           resolve(finalObject)
         })
       }else{
